@@ -1,4 +1,3 @@
-# main.py
 import os
 import uuid
 import time
@@ -14,13 +13,12 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import create_engine, Column, String, Integer, DateTime, JSON, func
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# --- Config ---
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-DATABASE_URL = "sqlite:///./files.db"  # simple local DB for dev
+DATABASE_URL = "sqlite:///./files.db"  
 
-# --- DB Setup ---
+# --- DB  ---
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
@@ -62,7 +60,7 @@ async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File
     db.add(record)
     db.commit()
 
-    # save file to disk (streaming)
+  
     CHUNK = 1024 * 1024
     async with aiofiles.open(dest_path, "wb") as out_file:
         while True:
@@ -70,9 +68,9 @@ async def upload_file(background_tasks: BackgroundTasks, file: UploadFile = File
             if not chunk:
                 break
             await out_file.write(chunk)
-            # NOTE: we could update upload-bytes progress here if desired
+          
 
-    # mark processing and schedule background parse
+
     record.status = "processing"
     record.progress = 1
     db.add(record); db.commit()
@@ -132,7 +130,7 @@ def delete_file(file_id: str):
     db.commit()
     return {"deleted": True}
 
-# --- Background parsing task (runs in thread) ---
+# --- Background parsing task---
 def parse_file_task(file_id: str, filepath: str):
     db = SessionLocal()
     rec = db.query(FileModel).filter(FileModel.id == file_id).first()
@@ -150,7 +148,7 @@ def parse_file_task(file_id: str, filepath: str):
                 # update progress (simulate)
                 rec.progress = min(5 + (i+1)*5, 90)
                 db.add(rec); db.commit()
-                time.sleep(0.1)  # small sleep to simulate longer processing
+                time.sleep(0.1)  
             parsed = rows
 
         elif lower.endswith((".xls", ".xlsx")):
@@ -184,3 +182,4 @@ def parse_file_task(file_id: str, filepath: str):
         print("Parsing failed:", e)
     finally:
         db.close()
+
